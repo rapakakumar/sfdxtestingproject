@@ -1,0 +1,118 @@
+#!groovy
+node 
+{
+
+	def DELTACHANGES = 'DeltaChanges'
+	def DEPLOYDIR = 'toDeploy'
+	def APIVERSION = '56.0'
+    def toolbelt = tool 'toolbelt'
+	def SERVER_KEY_CREDENTIALS_ID = env.SERVER_KEY_CREDENTIALS_ID
+	def SF_INSTANCE_URL = env.SF_INSTANCE_URL
+	def SF_CONSUMER_KEY = env.SF_CONSUMER_KEY
+	def SF_USERNAME_DEV = env.SF_USERNAME_DEV
+
+
+    // -------------------------------------------------------------------------
+    // Clean workspace.
+    // -------------------------------------------------------------------------	
+
+    stage('Clean Workspace') 
+    {
+            deleteDir()
+    }
+    // -------------------------------------------------------------------------
+    // Check out code from source control.
+    // -------------------------------------------------------------------------
+
+    stage('Checkout Source') 
+    {
+
+	 git credentialsId: 'GITLAB', url: 'https://github.com/rapakakumar/salesforcetrainingtest.git'	}
+
+    // -------------------------------------------------------------------------
+    // Run all the enclosed stages with access to the Salesforce
+    // JWT key credentials.
+    // -------------------------------------------------------------------------
+
+ 	withEnv(["HOME=${env.WORKSPACE}"]) 
+ 	{	
+	
+	    withCredentials([file(credentialsId: SERVER_KEY_CREDENTIALS_ID, variable: 'server_key_file')])
+	    {
+		// -------------------------------------------------------------------------
+		// Authenticate to Salesforce using the server key.
+		// -------------------------------------------------------------------------
+      stage('Authorize to Salesforce') 
+		{
+			
+			rc = command "${toolbelt}/sfdx auth:jwt:grant --instanceurl ${SF_INSTANCE_URL} --clientid ${SF_CONSUMER_KEY} --jwtkeyfile ${server_key_file} --username ${SF_USERNAME} --setalias ${SF_USERNAME}"
+		    if (rc != 0) 
+			{
+				currentBuild.result = "FAILED"				
+				error 'Salesforce org authorization failed.'
+		    }
+		}
+		    
+
+ 	}
+ 	}
+}
+stage('Delta changes')
+		{
+			script
+            {
+                //bat "echo y | sfdx plugins:install sfpowerkit"
+                rc = command "sfdx sfpowerkit:project:diff --revisionfrom %PreviousCommitId% --revisionto %LatestCommitId% --output ${DELTACHANGES} --apiversion ${APIVERSION} -x"
+                if (rc != 0) 
+				{
+					currentBuild.result = "FAILED"
+					error 'Unable to generate Delta changes.'
+				} 
+				def folder = fileExists 'DeltaChanges/force-app'
+				def file = fileExists 'DeltaChanges/destructiveChanges.xml'
+    
+				if( folder && !file )
+				{
+					dir("${WORKSPACE}/${DELTACHANGES}")
+					{
+						println "Force-app folder exist, destructiveChanges.xml doesn't exist"
+						rc = command "${toolbelt}/sfdx force:source:convert -d ../${DEPLOYDIR}"
+						if (rc != 0) 
+						{
+							currentBuild.result = "FAILED"
+							error 'Failed to convert metadata in mdapi format.'
+						}
+					}
+				} 
+				else if ( !folder && file ) 
+				{
+					bat "mkdir ${DEPLOYDIR}"
+					bat "copy ${DELTACHANGES}\\destructiveChanges.xml ${DEPLOYDIR}"
+					bat "copy manifest\\package.xml ${DEPLOYDIR}"
+					println "Force-app folder doesn't exist, destructiveChanges.xml exist" 
+				}
+				else if ( folder && file ) 
+				{
+					dir("${WORKSPACE}/${DELTACHANGES}")
+					{
+						println "Force-app folder exist, destructiveChanges.xml exist"
+						rc = command "${toolbelt}/sfdx force:source:convert -d ../${DEPLOYDIR}"
+						bat "copy destructiveChanges.xml ..\\${DEPLOYDIR}"
+					
+					}
+				}
+				else 
+				{
+					currentBuild.result = "FAILED"
+					error "There are no changes between the provided commit IDs that can be validated."
+				}
+               
+            }
+        }
+def command(script) {
+    if (isUnix()) {
+        return sh(returnStatus: true, script: script);
+    } else {
+		return bat(returnStatus: true, script: script);
+    }
+}
