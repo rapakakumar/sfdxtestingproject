@@ -1,0 +1,9 @@
+[
+  {
+    "action": "Deploy",
+    "metadataType": "ApexClass",
+    "componentName": "class6",
+    "message": "",
+    "path": "DeltaChanges\\force-app\\main\\default\\classes\\class6.cls-meta.xml"
+  }
+]
