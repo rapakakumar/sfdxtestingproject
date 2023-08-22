@@ -62,7 +62,7 @@ stage('Delta changes')
 			script
             {
                 //bat "echo y | sfdx plugins:install sfpowerkit"
-                rc = command "sfdx sfpowerkit:project:diff --revisionfrom %PreviousCommitId% --revisionto %LatestCommitId% --output ${DELTACHANGES} --apiversion ${APIVERSION} -x"
+                rc = command "sfdx sfpowerkit:project:diff --revisionfrom a6e4c1d5068961169be98d2cbf654e2bcad14ce2 --revisionto dca39ea4cfbc775f15a2b39b47686419af53686c --output ${DELTACHANGES} --apiversion ${APIVERSION} -x"
                 if (rc != 0) 
 				{
 					currentBuild.result = "FAILED"
