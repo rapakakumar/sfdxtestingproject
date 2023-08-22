@@ -1,5 +1,12 @@
 [
   {
+    "action": "Delete",
+    "componentName": "class5",
+    "metadataType": "ApexClass",
+    "message": "",
+    "path": "destructiveChanges.xml"
+  },
+  {
     "action": "Deploy",
     "metadataType": "ApexClass",
     "componentName": "class6",
