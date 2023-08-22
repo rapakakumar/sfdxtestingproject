@@ -1,16 +1,9 @@
 [
   {
-    "action": "Delete",
-    "componentName": "class5",
-    "metadataType": "ApexClass",
-    "message": "",
-    "path": "destructiveChanges.xml"
-  },
-  {
     "action": "Deploy",
     "metadataType": "ApexClass",
-    "componentName": "class6",
+    "componentName": "class2",
     "message": "",
-    "path": "DeltaChanges\\force-app\\main\\default\\classes\\class6.cls-meta.xml"
+    "path": "DeltaChanges\\force-app\\main\\default\\classes\\class2.cls-meta.xml"
   }
 ]
